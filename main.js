@@ -1,13 +1,14 @@
 import './style.css'
 import 'ol/ol.css'
-import Map from 'ol/Map.js'
-import OSM from 'ol/source/OSM.js'
-import TileLayer from 'ol/layer/Tile.js'
-import VectorLayer from 'ol/layer/Vector.js'
-import View from 'ol/View.js'
-import VectorSource from 'ol/source/Vector'
+
+import Map from 'ol/Map'
+import View from 'ol/View'
 import KML from 'ol/format/KML'
+import TileLayer from 'ol/layer/Tile'
+import VectorLayer from 'ol/layer/Vector'
 import { fromLonLat } from 'ol/proj'
+import OSM from 'ol/source/OSM'
+import VectorSource from 'ol/source/Vector'
 
 const map = new Map({
   target: 'map',
