@@ -1,5 +1,3 @@
-# Sonar KML viewer
+# Sonar KML stuff
 
-Intended to view sonar KMLs produced by SonarTRX.
-
-Published on [https://sonar.glaive.pro]
+Processing KMLs made by SonarTRX.
