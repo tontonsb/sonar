@@ -29,9 +29,6 @@ class Processor
 			$kml = $recording->getKml();
 			$fileName = $recording->dir.'.kml';
 
-			echo 'ok';
-			die;
-
 			file_put_contents($fileName, $kml);
 			echo "File $fileName written.\n";
 		}

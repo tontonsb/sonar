@@ -2,45 +2,61 @@
 
 namespace Tontonsb\Sonar;
 
+use DOMDocument;
+use DOMElement;
+
 class Clip
 {
-	public readonly string $correction;
-	public readonly string $clip;
-	public readonly string $document;
+	public readonly DOMElement $document;
 
-	public function __construct(public readonly string $kmlFile)
-	{
-		[$_, $this->correction, $this->clip, $_] = explode('/', $this->kmlFile);
-		$this->loadDocument();
+	public function __construct(
+		public readonly DOMDocument $xml,
+		public readonly string $clip,
+	) {
+		$this->initDoc();
 	}
 
-	protected function loadDocument(): void
+	protected function initDoc(): void
 	{
-		$kml = file_get_contents($this->kmlFile);
+		$this->document = $this->xml->createElement('Document');
 
-		// Extract the Document — each file only has one. No checks :))
-		preg_match('#<Document>(.*)</Document>#s', $kml, $matches);
-		$this->document = $matches[0];
+		$this->document->appendChild(
+			$this->xml->createElement('name', $this->clip)
+		);
+
+		$this->document->appendChild(
+			$this->xml->createElement('open', '1')
+		);
 	}
 
-	/**
-	 * Get doc with URLTOKEN replaced by the needed prefix
-	 */
-	public function getPreparedDocument(string $prefix): string
+	public function addChild(DOMElement $node): void
 	{
-		// Make the names more uniform
-		$doc = preg_replace(
-			'#<name>.*</name>#',
-			"<name>$this->clip $this->correction</name>",
-			$this->document,
-			1,
+		$this->document->appendChild(
+			$this->xml->importNode($node, true)
 		);
+	}
 
-		// replace URLTOKEN with the needed prefix
-		return str_replace(
-			Config::get('placeholder'),
-			$prefix,
-			$doc,
-		);
+	public function addOriginal(DOMElement $track): void
+	{
+		$track = $track->cloneNode(true);
+
+		// Originals are invisible by default
+		foreach ($track->getElementsByTagName('visibility') as $el)
+			$el->nodeValue = 0;
+
+		$name = $track->getElementsByTagName('name')[0];
+		$name->nodeValue .= ' (original)';
+
+		$this->addChild($track);
+	}
+
+	public function addSRC(DOMElement $track): void
+	{
+		$track = $track->cloneNode(true);
+
+		$name = $track->getElementsByTagName('name')[0];
+		$name->nodeValue .= ' (SRC)';
+
+		$this->addChild($track);
 	}
 }

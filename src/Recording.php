@@ -2,12 +2,18 @@
 
 namespace Tontonsb\Sonar;
 
+use DOMDocument;
+use DOMElement;
+
 class Recording
 {
-	protected string $kml;
 	protected string $location;
 	protected string $date;
 	protected string $sonarFile;
+	protected array $clips = [];
+
+	protected DOMDocument $xml;
+	protected DOMElement $root;
 
 	public function __construct(public readonly string $dir)
 	{
@@ -15,53 +21,82 @@ class Recording
 
 		[$this->location, $this->date, $this->sonarFile] = explode('-', $this->dir);
 
+		$this->initDoc();
+
 		$this->loadClips();
 	}
 
 	protected function validate(): void
 	{
 		if (2 !== substr_count($this->dir, '-'))
-			throw new DomainException("Bad name: $this->dir. Need exactly 2 dashes: location-date-sonarFile.\n");
+			throw new \DomainException("Bad name: $this->dir. Need exactly 2 dashes: location-date-sonarFile.\n");
 	}
 
-	public function loadClips(): void
+	protected function initDoc(): void
 	{
-		$this->kml = '';
+		$this->xml = new DOMDocument('1.0', 'utf-8');
+		$this->xml->formatOutput = true;
 
-		$clipXmls = array_map(
-			fn($file) => new Clip($file),
+		$this->kml = $this->xml->createElementNS('http://www.opengis.net/kml/2.2', 'kml');
+		$this->xml->appendChild($this->kml);
+
+		$this->root = $this->xml->createElement('Folder');
+		$this->kml->appendChild($this->root);
+
+		$this->root->appendChild(
+			$this->xml->createElement('name', $this->dir)
+		);
+
+		$this->root->appendChild(
+			$this->xml->createElement('open', 1)
+		);
+	}
+
+	protected function loadClips(): void
+	{
+		$clipDatas = array_map(
+			fn($file) => new ClipData($file),
 			glob($this->dir.'/*/*/doc_web.kml.txt'),
 		);
 
-		// Sort so that clip3 src is next to clip3 original
+		foreach ($clipDatas as $clipData) {
+			$clipData->prefix = implode('/', [Config::get('base'), $this->dir, $clipData->correction]);
+			// load() needs the prefix as it also does the URL prepration
+			$clipData->load();
+
+			// Now copy over the needed data to a Clip DOM that we want in the output
+			$clip = $this->getClip($clipData->clip);
+
+			if ('src' == $clipData->correction) {
+				foreach ($clipData->getStyles() as $style)
+					$clip->addChild($style);
+
+				$clip->addChild($clipData->track);
+
+				$clip->addSRC($clipData->left);
+				$clip->addSRC($clipData->right);
+			} else {
+				$clip->addOriginal($clipData->left);
+				$clip->addOriginal($clipData->right);
+			}
+		}
+
 		usort(
-			$clipXmls,
-			fn($a, $b) => $a->clip.$a->correction <=> $b->clip.$b->correction,
+			$this->clips,
+			fn($a, $b) => $a->clip <=> $b->clip,
 		);
 
-		foreach ($clipXmls as $clipXml) {
-			$this->kml .= $clipXml->getPreparedDocument(
-				implode('/', [Config::get('base'), $this->dir, $clipXml->correction])
-			);
-		}
+		foreach ($this->clips as $clip)
+			$this->root->appendChild($clip->document);
+	}
+
+	public function getClip($key): Clip
+	{
+		return $this->clips[$key] ??= new Clip($this->xml, $key);
 	}
 
 	public function getKml(): string
 	{
-		return $this->wrap($this->kml);
-	}
-
-	public function wrap($contents): string
-	{
-		return <<<XML
-			<?xml version="1.0" encoding="utf-8"?>
-			<kml xmlns="http://www.opengis.net/kml/2.2">
-			<Folder>
-				<name>$this->dir</name>
-				<open>1</open>
-				$contents
-			</Folder>
-			</kml>
-			XML;
+		return $this->xml->saveXML();
 	}
 }
