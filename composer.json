@@ -7,5 +7,8 @@
             "Tontonsb\\Sonar\\": "src/"
         }
     },
-    "require": {}
+    "require": {
+		"php": "^8.3",
+		"ext-xml": "*"
+	}
 }
