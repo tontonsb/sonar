@@ -1,0 +1,11 @@
+{
+    "name": "tontonsb/sonar",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Tontonsb\\Sonar\\": "src/"
+        }
+    },
+    "require": {}
+}
