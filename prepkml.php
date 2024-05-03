@@ -3,6 +3,10 @@
 $base = 'https://sonar.glaive.pro/kml';
 $placeholder = 'URLTOKEN';
 
+$location = $argv[1];
+if ($location)
+	chdir($location);
+
 // Take all ...Sonar... dirs and wrap them in the Recording class
 $recordings = array_map(
 	fn($file) => new Recording($file),
@@ -11,6 +15,12 @@ $recordings = array_map(
 		fn($node) => is_dir($node) && str_contains($node, 'Sonar'),
 	),
 );
+
+if (!$recordings) {
+	echo "No recordings to process found.";
+
+	die;
+}
 
 foreach ($recordings as $recording) {
 	$kml = $recording->getKml();
