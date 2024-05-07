@@ -25,12 +25,20 @@ class Processor
 			die;
 		}
 
+		$areas = new Areas;
+
 		foreach ($recordings as $recording) {
+			foreach ($recording->getAreas() as $area)
+				$areas->addChild($area->document);
+
 			$kml = $recording->getKml();
 			$fileName = $recording->dir.'.kml';
 
 			file_put_contents($fileName, $kml);
 			echo "File $fileName written.\n";
 		}
+
+		file_put_contents('Areas.kml', $areas->getKml());
+		echo "Covered areas written to Areas.kml.\n";
 	}
 }

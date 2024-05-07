@@ -5,34 +5,25 @@ namespace Tontonsb\Sonar;
 use DOMDocument;
 use DOMElement;
 
-class Clip
+class Clip extends KMLFragment
 {
-	public readonly DOMElement $document;
-
 	public function __construct(
 		public readonly DOMDocument $xml,
 		public readonly string $clip,
 	) {
+		parent::__construct('Document');
+
 		$this->initDoc();
 	}
 
 	protected function initDoc(): void
 	{
-		$this->document = $this->xml->createElement('Document');
-
 		$this->document->appendChild(
 			$this->xml->createElement('name', $this->clip)
 		);
 
 		$this->document->appendChild(
 			$this->xml->createElement('open', '1')
-		);
-	}
-
-	public function addChild(DOMElement $node): void
-	{
-		$this->document->appendChild(
-			$this->xml->importNode($node, true)
 		);
 	}
 

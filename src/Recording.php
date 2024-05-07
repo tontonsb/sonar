@@ -2,18 +2,15 @@
 
 namespace Tontonsb\Sonar;
 
-use DOMDocument;
 use DOMElement;
 
-class Recording
+class Recording extends KML
 {
 	protected string $location;
 	protected string $date;
 	protected string $sonarFile;
 	protected array $clips = [];
-
-	protected DOMDocument $xml;
-	protected DOMElement $root;
+	protected array $areas = [];
 
 	public function __construct(public readonly string $dir)
 	{
@@ -21,7 +18,7 @@ class Recording
 
 		[$this->location, $this->date, $this->sonarFile] = explode('-', $this->dir);
 
-		$this->initDoc();
+		parent::__construct();
 
 		$this->loadClips();
 	}
@@ -32,16 +29,9 @@ class Recording
 			throw new \DomainException("Bad name: $this->dir. Need exactly 2 dashes: location-date-sonarFile.\n");
 	}
 
-	protected function initDoc(): void
+	protected function initRoot(): void
 	{
-		$this->xml = new DOMDocument('1.0', 'utf-8');
-		$this->xml->formatOutput = true;
-
-		$this->kml = $this->xml->createElementNS('http://www.opengis.net/kml/2.2', 'kml');
-		$this->xml->appendChild($this->kml);
-
 		$this->root = $this->xml->createElement('Folder');
-		$this->kml->appendChild($this->root);
 
 		$this->root->appendChild(
 			$this->xml->createElement('name', $this->dir)
@@ -68,13 +58,22 @@ class Recording
 			$clip = $this->getClip($clipData->clip);
 
 			if ('src' == $clipData->correction) {
-				foreach ($clipData->getStyles() as $style)
+				// We only do areas for SRC
+				$area = new Area($this->xml, $this->sonarFile, $clipData->clip);
+
+				foreach ($clipData->getStyles() as $style) {
 					$clip->addChild($style);
+					$area->addChild($style);
+				}
 
 				$clip->addChild($clipData->track);
 
 				$clip->addSRC($clipData->left);
 				$clip->addSRC($clipData->right);
+
+				$area->addAreaFromTrack($clipData->left);
+				$area->addAreaFromTrack($clipData->right);
+				$this->areas[] = $area;
 			} else {
 				$clip->addOriginal($clipData->left);
 				$clip->addOriginal($clipData->right);
@@ -90,13 +89,13 @@ class Recording
 			$this->root->appendChild($clip->document);
 	}
 
-	public function getClip($key): Clip
+	protected function getClip($key): Clip
 	{
 		return $this->clips[$key] ??= new Clip($this->xml, $key);
 	}
 
-	public function getKml(): string
+	public function getAreas(): array
 	{
-		return $this->xml->saveXML();
+		return $this->areas;
 	}
 }
