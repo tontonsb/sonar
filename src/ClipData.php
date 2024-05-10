@@ -69,4 +69,11 @@ class ClipData
 			...iterator_to_array($this->document->getElementsByTagName('StyleMap')),
 		];
 	}
+
+	public function getMasterImage(): ?string
+	{
+		$filename = dirname($this->kmlFile).'/files/MasterImage.png';
+
+		return file_exists($filename) ? $filename : null;
+	}
 }

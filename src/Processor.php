@@ -27,18 +27,33 @@ class Processor
 
 		$areas = new Areas;
 
+		$masterImgDir = Config::get('master_image_dir');
+		if (!file_exists($masterImgDir)) {
+			mkdir($masterImgDir);
+		} else if (!is_dir($masterImgDir)) {
+			throw new \RuntimeException("Master image dir $masterImgDir exists and is not a directory.");
+		}
+
 		foreach ($recordings as $recording) {
+			echo "Processing recording $recording->sonarFile in $recording->dir.\n";
+
 			foreach ($recording->getAreas() as $area)
 				$areas->addChild($area->document);
+
+			$masterImages = $recording->getMasterImages();
+			foreach ($masterImages as $clipname => $image)
+				copy($image, $masterImgDir.'/'.$recording->sonarFile.'-'.$clipname.'.png');
+
+			echo "\t".count($masterImages)." master images found and copied to directory $masterImgDir\n";
 
 			$kml = $recording->getKml();
 			$fileName = $recording->dir.'.kml';
 
 			file_put_contents($fileName, $kml);
-			echo "File $fileName written.\n";
+			echo "\tFile $fileName written.\n";
 		}
 
 		file_put_contents('Areas.kml', $areas->getKml());
-		echo "Covered areas written to Areas.kml.\n";
+		echo "All covered areas written to Areas.kml.\n";
 	}
 }
