@@ -41,8 +41,13 @@ class Processor
 				$areas->addChild($area->document);
 
 			$masterImages = $recording->getMasterImages();
-			foreach ($masterImages as $clipname => $image)
-				copy($image, $masterImgDir.'/'.$recording->sonarFile.'-'.$clipname.'.png');
+			foreach ($masterImages as $clipname => $master) {
+				$name = $masterImgDir.'/'.$recording->sonarFile.'-'.$clipname;
+
+				copy($master['image'], $name.'.png');
+
+				file_put_contents($name.'.kml', $master['kml']->getKml());
+			}
 
 			echo "\t".count($masterImages)." master images found and copied to directory $masterImgDir\n";
 

@@ -22,7 +22,6 @@ class Recording extends KML
 		parent::__construct();
 
 		$this->loadClips();
-		$this->readMasterImages();
 	}
 
 	protected function validate(): void
@@ -56,8 +55,14 @@ class Recording extends KML
 			// load() needs the prefix as it also does the URL prepration
 			$clipData->load();
 
-			if ($masterImage = $clipData->getMasterImage())
-				$this->masterImages[$clipData->clip.'-'.$clipData->correction] = $masterImage;
+			if ($clipData->hasMasterImage()) {
+				$clipName = $clipData->clip.'-'.$clipData->correction;
+
+				$this->masterImages[$clipName] = [
+					'image' => $clipData->getMasterImage(),
+					'kml' => new MasterImage($clipData->master, $this->sonarFile.'–'.$clipName),
+				];
+			}
 
 			// Now copy over the needed data to a Clip DOM that we want in the output
 			$clip = $this->getClip($clipData->clip);
@@ -67,8 +72,8 @@ class Recording extends KML
 				$area = new Area($this->xml, $this->sonarFile, $clipData->clip);
 
 				foreach ($clipData->getStyles() as $style) {
-					$clip->addChild($style);
-					$area->addChild($style);
+					$clip->addChild($style->cloneNode(true));
+					$area->addChild($style->cloneNode(true));
 				}
 
 				$clip->addChild($clipData->track);
@@ -97,10 +102,6 @@ class Recording extends KML
 	protected function getClip($key): Clip
 	{
 		return $this->clips[$key] ??= new Clip($this->xml, $key);
-	}
-
-	public function readMasterImages(): void
-	{
 	}
 
 	public function getAreas(): array

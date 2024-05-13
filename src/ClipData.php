@@ -15,6 +15,7 @@ class ClipData
 	public readonly DOMElement $track;
 	public readonly DOMElement $left;
 	public readonly DOMElement $right;
+	public readonly DOMElement $master;
 
 	protected DOMElement $document;
 
@@ -47,6 +48,7 @@ class ClipData
 				'Sonar Track' => $this->track = $folder,
 				'Left Channel' => $this->left = $folder,
 				'Right Channel' => $this->right = $folder,
+				'MasterImage' => $this->master = $folder,
 				default => null,
 			};
 		}
@@ -70,10 +72,13 @@ class ClipData
 		];
 	}
 
+	public function hasMasterImage(): bool
+	{
+		return isset($this->master) && file_exists($this->getMasterImage());
+	}
+
 	public function getMasterImage(): ?string
 	{
-		$filename = dirname($this->kmlFile).'/files/MasterImage.png';
-
-		return file_exists($filename) ? $filename : null;
+		return dirname($this->kmlFile).'/files/MasterImage.png';
 	}
 }
